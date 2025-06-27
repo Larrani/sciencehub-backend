@@ -85,7 +85,7 @@ export default function Home() {
         <div className="container mx-auto px-4 text-center">
           <div className="max-w-2xl mx-auto">
             <div className="text-4xl text-blue-500 mb-6">📧</div>
-            <h2 className="text-3xl font-bold mb-4">Stay Updated with Science</h2>
+            <h2 className="text-3xl font-bold mb-4">Stay Updated with Science & Spirituality</h2>
             <p className="text-gray-400 mb-8">
               Subscribe to our newsletter and never miss the latest discoveries in science and technology.
             </p>
