@@ -33,21 +33,17 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-black text-white">
       <Header />
-      
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-black via-gray-900 to-black py-16 lg:py-24">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
             Welcome to ScienceHeaven
           </h1>
-          <p className="text-lg lg:text-xl text-gray-300 mb-12 max-w-4xl mx-auto leading-relaxed">
-            Discover fascinating articles and videos about physics, chemistry, biology, astronomy, and cutting-edge technology.
-          </p>
+          <p className="text-lg lg:text-xl text-gray-300 mb-12 max-w-4xl mx-auto leading-relaxed">Discover thought-provoking articles and videos where technology meets spirituality — exploring innovation, consciousness, and the deeper questions of our time.</p>
           
           <SearchFilters filters={filters} onFiltersChange={setFilters} />
         </div>
       </section>
-
       {/* Content Section */}
       <section className="py-16 bg-black">
         <div className="container mx-auto px-4">
@@ -84,7 +80,6 @@ export default function Home() {
           )}
         </div>
       </section>
-
       {/* Newsletter Section */}
       <section className="py-16 bg-gray-900">
         <div className="container mx-auto px-4 text-center">
@@ -110,7 +105,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
       <Footer />
     </div>
   );
