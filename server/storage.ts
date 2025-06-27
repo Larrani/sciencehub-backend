@@ -1,20 +1,22 @@
 import {
-  users,
+  admins,
   content,
-  type User,
-  type UpsertUser,
+  type Admin,
+  type InsertAdmin,
   type Content,
   type InsertContent,
   type UpdateContent,
   type ContentFilters,
 } from "@shared/schema";
+import bcrypt from "bcrypt";
 import { db } from "./db";
 import { eq, desc, asc, ilike, and, or, sql } from "drizzle-orm";
 
 export interface IStorage {
-  // User operations (required for Replit Auth)
-  getUser(id: string): Promise<User | undefined>;
-  upsertUser(user: UpsertUser): Promise<User>;
+  // Admin operations
+  getAdminByUsername(username: string): Promise<Admin | undefined>;
+  createAdmin(admin: InsertAdmin): Promise<Admin>;
+  verifyAdmin(username: string, password: string): Promise<Admin | null>;
   
   // Content operations
   getContent(filters?: ContentFilters): Promise<Content[]>;
@@ -25,25 +27,31 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // User operations
-  async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+  // Admin operations
+  async getAdminByUsername(username: string): Promise<Admin | undefined> {
+    const [admin] = await db.select().from(admins).where(eq(admins.username, username));
+    return admin;
   }
 
-  async upsertUser(userData: UpsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(userData)
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
-          ...userData,
-          updatedAt: new Date(),
-        },
+  async createAdmin(adminData: InsertAdmin): Promise<Admin> {
+    // Hash the password before storing
+    const hashedPassword = await bcrypt.hash(adminData.password, 10);
+    const [admin] = await db
+      .insert(admins)
+      .values({
+        ...adminData,
+        password: hashedPassword,
       })
       .returning();
-    return user;
+    return admin;
+  }
+
+  async verifyAdmin(username: string, password: string): Promise<Admin | null> {
+    const admin = await this.getAdminByUsername(username);
+    if (!admin) return null;
+    
+    const isValid = await bcrypt.compare(password, admin.password);
+    return isValid ? admin : null;
   }
 
   // Content operations

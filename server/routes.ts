@@ -2,7 +2,9 @@ import type { Express } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { isAuthenticated, loginAdmin } from "./auth";
+import session from "express-session";
+import MemoryStore from "memorystore";
 import { insertContentSchema, updateContentSchema, contentFilterSchema } from "@shared/schema";
 import multer from "multer";
 import path from "path";
@@ -29,22 +31,84 @@ const upload = multer({
   },
 });
 
+const MemoryStoreSession = MemoryStore(session);
+
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
-  await setupAuth(app);
+  // Simple session middleware
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'your-secret-key-change-this',
+    store: new MemoryStoreSession({ checkPeriod: 86400000 }),
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 } // 24 hours
+  }));
 
   // Serve uploaded files
   app.use('/uploads', express.static(uploadDir));
 
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  // Admin authentication routes
+  app.post('/api/admin/login', async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
+      const { username, password } = req.body;
+      const admin = await loginAdmin(username, password);
+      
+      if (admin) {
+        (req.session as any).adminId = admin.id;
+        (req.session as any).adminUsername = admin.username;
+        res.json({ success: true, admin: { id: admin.id, username: admin.username, name: admin.name } });
+      } else {
+        res.status(401).json({ message: "Invalid credentials" });
+      }
     } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  app.post('/api/admin/logout', (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Logout failed" });
+      }
+      res.json({ success: true });
+    });
+  });
+
+  app.get('/api/admin/status', (req, res) => {
+    const session = req.session as any;
+    if (session.adminId) {
+      res.json({ 
+        isLoggedIn: true, 
+        admin: { 
+          id: session.adminId, 
+          username: session.adminUsername 
+        } 
+      });
+    } else {
+      res.json({ isLoggedIn: false });
+    }
+  });
+
+  // Setup route - creates first admin
+  app.post('/api/admin/setup', async (req, res) => {
+    try {
+      const existingAdmin = await storage.getAdminByUsername('admin');
+      if (existingAdmin) {
+        return res.status(400).json({ message: "Admin already exists" });
+      }
+
+      const { username, password, name, email } = req.body;
+      await storage.createAdmin({
+        username: username || 'admin',
+        password: password || 'admin123',
+        name: name || 'Administrator',
+        email: email || 'admin@example.com'
+      });
+
+      res.json({ success: true, message: "Admin created successfully" });
+    } catch (error) {
+      console.error("Setup error:", error);
+      res.status(500).json({ message: "Setup failed" });
     }
   });
 
