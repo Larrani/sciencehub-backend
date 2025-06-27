@@ -140,24 +140,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin-only routes
+  // Admin-only routes with new authentication
   const requireAdmin = async (req: any, res: any, next: any) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      
-      if (!user?.isAdmin) {
-        return res.status(403).json({ message: 'Admin access required' });
-      }
-      
-      next();
-    } catch (error) {
-      res.status(500).json({ message: 'Failed to verify admin status' });
+    const session = req.session as any;
+    if (!session.adminId) {
+      return res.status(401).json({ message: 'Admin login required' });
     }
+    next();
   };
 
   // Admin content management routes
-  app.post('/api/admin/content', isAuthenticated, requireAdmin, upload.single('featuredImage'), async (req, res) => {
+  app.post('/api/content', requireAdmin, upload.single('featuredImage'), async (req, res) => {
     try {
       const contentData = insertContentSchema.parse({
         ...req.body,
@@ -179,7 +172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/admin/content/:id', isAuthenticated, requireAdmin, upload.single('featuredImage'), async (req, res) => {
+  app.put('/api/content/:id', requireAdmin, upload.single('featuredImage'), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const contentData = updateContentSchema.parse({
@@ -202,7 +195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/admin/content/:id', isAuthenticated, requireAdmin, async (req, res) => {
+  app.delete('/api/content/:id', requireAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteContent(id);
