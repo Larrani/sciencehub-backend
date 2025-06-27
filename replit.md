@@ -121,7 +121,10 @@ ScienceHeaven is a full-stack web application for managing and displaying scient
 
 ```
 Changelog:
-- June 27, 2025. Initial setup
+- June 27, 2025. Initial setup and basic CMS structure
+- June 27, 2025. Added sample content and integrated custom ScienceHeaven logo
+- June 27, 2025. Removed Legal section from footer per user request
+- June 27, 2025. Application ready for deployment with custom branding
 ```
 
 ## User Preferences

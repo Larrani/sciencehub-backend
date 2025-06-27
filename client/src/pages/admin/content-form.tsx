@@ -15,7 +15,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Save, Atom } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
+import logoPath from "@assets/SCIENCE HEAVEN ICON PNG_1751016773425.png";
 import { z } from "zod";
 
 const formSchema = insertContentSchema.extend({
@@ -187,7 +188,7 @@ export default function ContentForm() {
               Back to Dashboard
             </Button>
             <div className="flex items-center space-x-2">
-              <Atom className="h-6 w-6 text-blue-500" />
+              <img src={logoPath} alt="ScienceHeaven" className="h-6 w-6" />
               <h1 className="text-lg font-bold">
                 {isEdit ? 'Edit Content' : 'Create Content'}
               </h1>

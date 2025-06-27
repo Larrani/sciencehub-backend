@@ -1,4 +1,4 @@
-import { Atom } from "lucide-react";
+import logoPath from "@assets/SCIENCE HEAVEN ICON PNG_1751016773425.png";
 
 export default function Footer() {
   const footerLinks = {
@@ -30,7 +30,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="md:col-span-1">
             <div className="flex items-center space-x-2 mb-4">
-              <Atom className="h-8 w-8 text-blue-500" />
+              <img src={logoPath} alt="ScienceHeaven" className="h-8 w-8" />
               <h3 className="text-xl font-bold text-white">ScienceHeaven</h3>
             </div>
             <p className="text-gray-400 text-sm">

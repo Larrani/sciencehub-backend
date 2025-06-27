@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Atom } from "lucide-react";
+import logoPath from "@assets/SCIENCE HEAVEN ICON PNG_1751016773425.png";
 
 export default function AdminLogin() {
   const handleLogin = () => {
@@ -12,7 +12,7 @@ export default function AdminLogin() {
       <Card className="w-full max-w-md bg-gray-900 border-gray-800">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <Atom className="h-12 w-12 text-blue-500" />
+            <img src={logoPath} alt="ScienceHeaven" className="h-12 w-12" />
           </div>
           <CardTitle className="text-2xl text-white">ScienceHeaven Admin</CardTitle>
           <p className="text-gray-400">Sign in to manage content</p>

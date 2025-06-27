@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Atom, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import logoPath from "@assets/SCIENCE HEAVEN ICON PNG_1751016773425.png";
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -17,7 +18,7 @@ export default function Header() {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Atom className="h-8 w-8 text-blue-500" />
+            <img src={logoPath} alt="ScienceHeaven" className="h-8 w-8" />
             <h1 className="text-xl font-bold text-white">ScienceHeaven</h1>
           </div>
           

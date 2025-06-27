@@ -14,9 +14,9 @@ import {
   Trash2, 
   FileText, 
   Video, 
-  LogOut,
-  Atom
+  LogOut
 } from "lucide-react";
+import logoPath from "@assets/SCIENCE HEAVEN ICON PNG_1751016773425.png";
 
 export default function AdminDashboard() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -117,7 +117,7 @@ export default function AdminDashboard() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <Atom className="h-8 w-8 text-blue-500" />
+              <img src={logoPath} alt="ScienceHeaven" className="h-8 w-8" />
               <h1 className="text-xl font-bold">ScienceHeaven Admin</h1>
             </div>
             <div className="flex items-center space-x-4">
