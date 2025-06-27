@@ -1,13 +1,10 @@
-import { useEffect } from "react";
-import { Link } from "wouter";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
-import { isUnauthorizedError } from "@/lib/authUtils";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Plus, 
   Edit, 
@@ -17,55 +14,32 @@ import {
   LogOut
 } from "lucide-react";
 import logoPath from "@assets/SCIENCE HEAVEN ICON PNG_1751016773425.png";
+import type { Content } from "@shared/schema";
 
 export default function AdminDashboard() {
-  const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
-      return;
-    }
-  }, [isAuthenticated, isLoading, toast]);
+  const { data: adminStatus } = useQuery({
+    queryKey: ['/api/admin/status'],
+    retry: false,
+  });
 
   const { data: content = [], isLoading: contentLoading } = useQuery({
-    queryKey: ['/api/admin/content'],
-    enabled: isAuthenticated && user?.isAdmin,
+    queryKey: ['/api/content'],
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest('DELETE', `/api/admin/content/${id}`);
+      await apiRequest('DELETE', `/api/content/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/content'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/content'] });
       toast({
         title: "Success",
         description: "Content deleted successfully",
       });
     },
     onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
       toast({
         title: "Error",
         description: "Failed to delete content",
@@ -74,41 +48,32 @@ export default function AdminDashboard() {
     },
   });
 
-  const handleLogout = () => {
-    window.location.href = "/api/logout";
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/logout', { method: 'POST' });
+      window.location.href = '/admin/login';
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to logout",
+        variant: "destructive",
+      });
+    }
   };
 
-  const getCategoryColor = (category: string) => {
-    const colors = {
-      physics: "bg-blue-600",
-      chemistry: "bg-red-600", 
-      biology: "bg-green-600",
-      astronomy: "bg-purple-600",
-      technology: "bg-orange-600",
-    };
-    return colors[category as keyof typeof colors] || "bg-gray-600";
+  const handleDelete = (id: number) => {
+    if (confirm('Are you sure you want to delete this content?')) {
+      deleteMutation.mutate(id);
+    }
   };
 
-  if (isLoading || contentLoading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white">Loading...</div>
-      </div>
-    );
-  }
+  const admin = adminStatus?.admin;
 
-  if (!user?.isAdmin) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <Card className="w-full max-w-md bg-gray-900 border-gray-800">
-          <CardContent className="pt-6 text-center">
-            <div className="text-red-500 text-lg mb-4">Access Denied</div>
-            <p className="text-gray-400">Admin privileges required</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Stats
+  const totalContent = content.length;
+  const articles = content.filter((item: Content) => item.type === 'article').length;
+  const videos = content.filter((item: Content) => item.type === 'video').length;
+  const published = content.filter((item: Content) => item.published).length;
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -121,11 +86,13 @@ export default function AdminDashboard() {
               <h1 className="text-xl font-bold">ScienceHeaven Admin</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-gray-400">Welcome, {user.firstName || user.email}</span>
+              <span className="text-sm text-gray-400">
+                Welcome, {admin?.username || 'Admin'}
+              </span>
               <Button 
-                variant="outline" 
-                size="sm" 
                 onClick={handleLogout}
+                variant="outline" 
+                size="sm"
                 className="border-gray-700 text-gray-300 hover:bg-gray-800"
               >
                 <LogOut className="h-4 w-4 mr-2" />
@@ -144,7 +111,7 @@ export default function AdminDashboard() {
               <CardTitle className="text-sm font-medium text-gray-400">Total Content</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">{content.length}</div>
+              <div className="text-2xl font-bold text-white">{totalContent}</div>
             </CardContent>
           </Card>
           
@@ -153,9 +120,7 @@ export default function AdminDashboard() {
               <CardTitle className="text-sm font-medium text-gray-400">Articles</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">
-                {content.filter(item => item.type === 'article').length}
-              </div>
+              <div className="text-2xl font-bold text-white">{articles}</div>
             </CardContent>
           </Card>
           
@@ -164,9 +129,7 @@ export default function AdminDashboard() {
               <CardTitle className="text-sm font-medium text-gray-400">Videos</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">
-                {content.filter(item => item.type === 'video').length}
-              </div>
+              <div className="text-2xl font-bold text-white">{videos}</div>
             </CardContent>
           </Card>
           
@@ -175,9 +138,7 @@ export default function AdminDashboard() {
               <CardTitle className="text-sm font-medium text-gray-400">Published</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">
-                {content.filter(item => item.published).length}
-              </div>
+              <div className="text-2xl font-bold text-white">{published}</div>
             </CardContent>
           </Card>
         </div>
@@ -185,71 +146,88 @@ export default function AdminDashboard() {
         {/* Actions */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold">Content Management</h2>
-          <Link href="/admin/content/new">
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Content
-            </Button>
-          </Link>
+          <Button 
+            onClick={() => window.location.href = '/admin/content/new'}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Create Content
+          </Button>
         </div>
 
         {/* Content List */}
-        <Card className="bg-gray-900 border-gray-800">
-          <CardContent className="p-0">
-            {content.length === 0 ? (
-              <div className="text-center py-8 text-gray-400">
-                No content available. Create your first piece of content.
-              </div>
-            ) : (
-              <div className="divide-y divide-gray-800">
-                {content.map((item) => (
-                  <div key={item.id} className="p-6 hover:bg-gray-800/50 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          {item.type === 'article' ? (
-                            <FileText className="h-5 w-5 text-blue-500" />
-                          ) : (
-                            <Video className="h-5 w-5 text-green-500" />
-                          )}
-                          <h3 className="text-lg font-semibold text-white">{item.title}</h3>
-                          <Badge className={`${getCategoryColor(item.category)} text-white`}>
-                            {item.category}
-                          </Badge>
-                          {!item.published && (
-                            <Badge variant="outline" className="border-yellow-600 text-yellow-600">
-                              Draft
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-gray-400 text-sm mb-2">{item.excerpt}</p>
-                        <div className="text-xs text-gray-500">
-                          By {item.author} • {new Date(item.createdAt).toLocaleDateString()}
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2 ml-4">
-                        <Link href={`/admin/content/${item.id}/edit`}>
-                          <Button variant="outline" size="sm" className="border-gray-700">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => deleteMutation.mutate(item.id)}
-                          disabled={deleteMutation.isPending}
-                          className="border-red-600 text-red-500 hover:bg-red-600 hover:text-white"
+        {contentLoading ? (
+          <div className="text-center py-8">
+            <div className="text-gray-400">Loading content...</div>
+          </div>
+        ) : (
+          <div className="grid gap-4">
+            {content.map((item: Content) => (
+              <Card key={item.id} className="bg-gray-900 border-gray-800">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        {item.type === 'article' ? (
+                          <FileText className="h-4 w-4 text-blue-400" />
+                        ) : (
+                          <Video className="h-4 w-4 text-red-400" />
+                        )}
+                        <h3 className="text-lg font-semibold text-white">{item.title}</h3>
+                        <Badge 
+                          variant={item.published ? "default" : "secondary"}
+                          className={item.published ? "bg-green-600" : "bg-gray-600"}
                         >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                          {item.published ? 'Published' : 'Draft'}
+                        </Badge>
+                      </div>
+                      <p className="text-gray-400 text-sm mb-2">{item.excerpt}</p>
+                      <div className="flex items-center space-x-4 text-xs text-gray-500">
+                        <span>Category: {item.category}</span>
+                        <span>Author: {item.author}</span>
+                        <span>Created: {new Date(item.createdAt).toLocaleDateString()}</span>
                       </div>
                     </div>
+                    <div className="flex items-center space-x-2 ml-4">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => window.location.href = `/admin/content/${item.id}/edit`}
+                        className="border-gray-700 text-gray-300 hover:bg-gray-800"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleDelete(item.id)}
+                        disabled={deleteMutation.isPending}
+                        className="border-red-700 text-red-400 hover:bg-red-900"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {content.length === 0 && !contentLoading && (
+          <div className="text-center py-12">
+            <FileText className="mx-auto h-12 w-12 text-gray-600 mb-4" />
+            <h3 className="text-lg font-medium text-gray-400 mb-2">No content yet</h3>
+            <p className="text-gray-500 mb-4">Get started by creating your first article or video.</p>
+            <Button 
+              onClick={() => window.location.href = '/admin/content/new'}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Content
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
